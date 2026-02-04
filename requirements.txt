@@ -1,0 +1,41 @@
+# Core ML and RL frameworks
+ray[rllib]==2.9.0
+stable-baselines3==2.2.1
+gymnasium==0.29.1
+torch==2.1.2
+numpy==1.24.4
+scipy==1.11.4
+
+# Traffic simulation
+sumolib==1.19.0
+traci==1.19.0
+
+# Data processing
+pandas==2.1.4
+networkx==3.2.1
+
+# Experiment tracking and config
+mlflow==2.9.2
+pyyaml==6.0.1
+omegaconf==2.3.0
+
+# Visualization
+matplotlib==3.8.2
+seaborn==0.13.1
+plotly==5.17.0
+
+# Testing
+pytest==7.4.4
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+
+# Code quality
+black==23.12.1
+flake8==7.0.0
+mypy==1.8.0
+pre-commit==3.6.0
+
+# Utilities
+tqdm==4.66.1
+colorlog==6.8.0
+psutil==5.9.7

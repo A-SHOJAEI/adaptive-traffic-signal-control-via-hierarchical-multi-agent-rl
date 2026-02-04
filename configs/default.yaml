@@ -1,0 +1,165 @@
+# Default configuration for adaptive traffic signal control
+experiment:
+  name: "hierarchical_marl_traffic_control"
+  seed: 42
+  log_level: "INFO"
+  output_dir: "outputs"
+
+# Environment configuration
+environment:
+  type: "sumo"  # sumo, carla, or synthetic
+  scenario: "manhattan_grid"  # manhattan_grid, cologne, custom
+  grid_size: [5, 5]  # For synthetic scenarios
+  simulation_time: 3600  # seconds
+  step_length: 1.0  # seconds per simulation step
+  yellow_duration: 3  # seconds
+  min_green_duration: 5  # seconds
+  max_green_duration: 60  # seconds
+
+  # Observation configuration
+  observation:
+    vehicle_positions: true
+    queue_lengths: true
+    waiting_times: true
+    phase_durations: true
+    neighboring_states: true
+    history_length: 4
+
+  # Reward configuration
+  reward:
+    waiting_time_weight: -1.0
+    throughput_weight: 0.5
+    coordination_weight: 0.3
+    fuel_consumption_weight: -0.2
+
+# Agent configuration
+agents:
+  hierarchy_levels: 2
+
+  # Low-level intersection agents
+  low_level:
+    type: "intersection_agent"
+    algorithm: "PPO"
+    observation_space_dim: 64
+    action_space_type: "discrete"
+    action_space_size: 4  # 4 possible phases
+
+  # High-level district coordination agents
+  high_level:
+    type: "district_agent"
+    algorithm: "SAC"
+    observation_space_dim: 128
+    action_space_type: "continuous"
+    action_space_size: 16  # Coordination signals to low-level agents
+    district_size: [3, 3]  # 3x3 intersection districts
+
+# Training configuration
+training:
+  framework: "ray"  # ray or sb3
+  total_timesteps: 1000000
+  batch_size: 2048
+  learning_rate: 3e-4
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  entropy_coeff: 0.01
+  value_function_coeff: 0.5
+  max_grad_norm: 0.5
+
+  # Hierarchical training
+  hierarchical:
+    pretrain_low_level: true
+    pretrain_steps: 100000
+    coordination_frequency: 10  # High-level decisions every N low-level steps
+    communication_dim: 32
+
+  # Multi-agent training
+  multi_agent:
+    shared_policy: false
+    parameter_sharing: true
+    centralized_critic: true
+
+  # Curriculum learning
+  curriculum:
+    enabled: true
+    initial_difficulty: 0.3
+    max_difficulty: 1.0
+    difficulty_increment: 0.1
+    performance_threshold: 0.8
+
+# Model architecture
+model:
+  # Low-level agent network
+  low_level_net:
+    hidden_layers: [256, 256, 128]
+    activation: "relu"
+    use_lstm: true
+    lstm_hidden_size: 128
+
+  # High-level agent network
+  high_level_net:
+    hidden_layers: [512, 512, 256]
+    activation: "relu"
+    attention_heads: 8
+    use_transformer: true
+
+  # Communication network
+  communication_net:
+    hidden_layers: [128, 64]
+    activation: "tanh"
+
+# Evaluation configuration
+evaluation:
+  interval: 10000  # Evaluate every N training steps
+  episodes: 10
+  metrics:
+    - "average_wait_time"
+    - "throughput"
+    - "fuel_consumption"
+    - "coordination_efficiency"
+    - "transfer_learning_retention"
+
+  # Transfer learning evaluation
+  transfer_scenarios:
+    - "cologne_to_manhattan"
+    - "manhattan_to_cologne"
+    - "small_to_large_grid"
+
+# Logging and checkpointing
+logging:
+  mlflow:
+    enabled: true
+    experiment_name: "traffic_control_experiments"
+    tracking_uri: "file:./mlruns"
+
+  checkpoints:
+    enabled: true
+    frequency: 25000  # Save every N steps
+    keep_last: 5
+
+  tensorboard:
+    enabled: true
+    log_dir: "logs/tensorboard"
+
+# Data configuration
+data:
+  sumo:
+    binary_path: "/usr/share/sumo/bin/sumo"
+    config_dir: "data/sumo_configs"
+
+  datasets:
+    cologne:
+      url: "https://sumo.dlr.de/docs/Data/Scenarios/TAPASCologne.html"
+      local_path: "data/cologne"
+
+    manhattan:
+      generate_synthetic: true
+      grid_sizes: [[3, 3], [5, 5], [7, 7], [10, 10]]
+      traffic_densities: [0.3, 0.5, 0.7, 0.9]
+
+# Target performance metrics
+target_metrics:
+  average_wait_time_reduction: 0.35
+  throughput_improvement: 0.25
+  coordination_efficiency: 0.8
+  transfer_learning_retention: 0.7

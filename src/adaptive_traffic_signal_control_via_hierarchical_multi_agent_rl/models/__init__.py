@@ -1,12 +1,19 @@
 """Model implementations for hierarchical multi-agent traffic control."""
 
-from .model import (
-    HierarchicalTrafficAgent,
-    IntersectionAgent,
-    DistrictAgent,
-    CommunicationNetwork,
-    AttentionNetwork,
-)
+try:
+    from .model import (
+        HierarchicalTrafficAgent,
+        IntersectionAgent,
+        DistrictAgent,
+        CommunicationNetwork,
+        AttentionNetwork,
+    )
+except ImportError:
+    HierarchicalTrafficAgent = None
+    IntersectionAgent = None
+    DistrictAgent = None
+    CommunicationNetwork = None
+    AttentionNetwork = None
 
 __all__ = [
     "HierarchicalTrafficAgent",

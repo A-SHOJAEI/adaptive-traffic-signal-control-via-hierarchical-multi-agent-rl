@@ -20,13 +20,27 @@ __version__ = "1.0.0"
 __author__ = "Traffic Control Research Team"
 __email__ = "research@example.com"
 
-from .models.model import (
-    HierarchicalTrafficAgent,
-    IntersectionAgent,
-    DistrictAgent,
-)
-from .training.trainer import HierarchicalTrainer
-from .evaluation.metrics import TrafficMetrics
+# Lazy imports: SUMO-dependent modules may not be available
+try:
+    from .models.model import (
+        HierarchicalTrafficAgent,
+        IntersectionAgent,
+        DistrictAgent,
+    )
+except ImportError:
+    HierarchicalTrafficAgent = None
+    IntersectionAgent = None
+    DistrictAgent = None
+
+try:
+    from .training.trainer import HierarchicalTrainer
+except ImportError:
+    HierarchicalTrainer = None
+
+try:
+    from .evaluation.metrics import TrafficMetrics
+except ImportError:
+    TrafficMetrics = None
 
 __all__ = [
     "HierarchicalTrafficAgent",

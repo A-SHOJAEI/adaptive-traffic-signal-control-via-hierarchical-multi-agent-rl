@@ -1,7 +1,16 @@
 """Data loading and preprocessing modules."""
 
-from .loader import SUMODataLoader, TrafficDataLoader
-from .preprocessing import TrafficPreprocessor, SyntheticTrafficGenerator
+try:
+    from .loader import SUMODataLoader, TrafficDataLoader
+except ImportError:
+    SUMODataLoader = None
+    TrafficDataLoader = None
+
+try:
+    from .preprocessing import TrafficPreprocessor, SyntheticTrafficGenerator
+except ImportError:
+    TrafficPreprocessor = None
+    SyntheticTrafficGenerator = None
 
 __all__ = [
     "SUMODataLoader",

@@ -1,0 +1,166 @@
+# Ablation study configuration for hierarchical multi-agent RL traffic control
+# This configuration disables the communication network to test its contribution
+# to overall system performance. By removing inter-agent communication, we can
+# measure the impact of the hierarchical coordination mechanism.
+
+experiment:
+  name: "ablation_no_communication"
+  seed: 42
+  log_level: "INFO"
+  output_dir: "outputs"
+
+# Environment configuration (same as default)
+environment:
+  type: "sumo"
+  scenario: "manhattan_grid"
+  grid_size: [5, 5]
+  simulation_time: 3600
+  step_length: 1.0
+  yellow_duration: 3
+  min_green_duration: 5
+  max_green_duration: 60
+
+  observation:
+    vehicle_positions: true
+    queue_lengths: true
+    waiting_times: true
+    phase_durations: true
+    neighboring_states: true
+    history_length: 4
+
+  reward:
+    waiting_time_weight: -1.0
+    throughput_weight: 0.5
+    coordination_weight: 0.3
+    fuel_consumption_weight: -0.2
+
+# Agent configuration - ABLATION: Single-level agents without coordination
+agents:
+  hierarchy_levels: 1  # ABLATION: Reduced from 2 to 1 (no hierarchy)
+
+  # Low-level intersection agents (same as default)
+  low_level:
+    type: "intersection_agent"
+    algorithm: "PPO"
+    observation_space_dim: 64
+    action_space_type: "discrete"
+    action_space_size: 4
+
+  # High-level district coordination agents - DISABLED in ablation
+  high_level:
+    type: "district_agent"
+    algorithm: "SAC"
+    observation_space_dim: 128
+    action_space_type: "continuous"
+    action_space_size: 16
+    district_size: [3, 3]
+
+# Training configuration
+training:
+  framework: "ray"
+  total_timesteps: 1000000
+  batch_size: 2048
+  learning_rate: 3e-4
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  entropy_coeff: 0.01
+  value_function_coeff: 0.5
+  max_grad_norm: 0.5
+
+  # Hierarchical training - ABLATION: Disabled
+  hierarchical:
+    pretrain_low_level: false  # ABLATION: No pre-training
+    pretrain_steps: 0  # ABLATION: No hierarchical training
+    coordination_frequency: 999999  # ABLATION: Effectively disabled
+    communication_dim: 0  # ABLATION: No communication
+
+  # Multi-agent training
+  multi_agent:
+    shared_policy: false
+    parameter_sharing: true
+    centralized_critic: false  # ABLATION: Independent critics
+
+  # Curriculum learning (same as default)
+  curriculum:
+    enabled: true
+    initial_difficulty: 0.3
+    max_difficulty: 1.0
+    difficulty_increment: 0.1
+    performance_threshold: 0.8
+
+# Model architecture
+model:
+  # Low-level agent network (same as default)
+  low_level_net:
+    hidden_layers: [256, 256, 128]
+    activation: "relu"
+    use_lstm: true
+    lstm_hidden_size: 128
+
+  # High-level agent network - NOT USED in ablation
+  high_level_net:
+    hidden_layers: [512, 512, 256]
+    activation: "relu"
+    attention_heads: 8
+    use_transformer: false  # ABLATION: Disabled
+
+  # Communication network - DISABLED in ablation
+  communication_net:
+    hidden_layers: [0]  # ABLATION: Empty network
+    activation: "tanh"
+
+# Evaluation configuration (same as default)
+evaluation:
+  interval: 10000
+  episodes: 10
+  metrics:
+    - "average_wait_time"
+    - "throughput"
+    - "fuel_consumption"
+    - "coordination_efficiency"
+    - "transfer_learning_retention"
+
+  transfer_scenarios:
+    - "cologne_to_manhattan"
+    - "manhattan_to_cologne"
+    - "small_to_large_grid"
+
+# Logging and checkpointing (same as default)
+logging:
+  mlflow:
+    enabled: true
+    experiment_name: "ablation_no_communication"
+    tracking_uri: "file:./mlruns"
+
+  checkpoints:
+    enabled: true
+    frequency: 25000
+    keep_last: 5
+
+  tensorboard:
+    enabled: true
+    log_dir: "logs/tensorboard"
+
+# Data configuration (same as default)
+data:
+  sumo:
+    binary_path: "/usr/share/sumo/bin/sumo"
+    config_dir: "data/sumo_configs"
+
+  datasets:
+    cologne:
+      url: "https://sumo.dlr.de/docs/Data/Scenarios/TAPASCologne.html"
+      local_path: "data/cologne"
+
+    manhattan:
+      generate_synthetic: true
+      grid_sizes: [[3, 3], [5, 5], [7, 7], [10, 10]]
+      traffic_densities: [0.3, 0.5, 0.7, 0.9]
+
+# Target performance metrics
+target_metrics:
+  average_wait_time_reduction: 0.35
+  throughput_improvement: 0.25
+  coordination_efficiency: 0.8
+  transfer_learning_retention: 0.7

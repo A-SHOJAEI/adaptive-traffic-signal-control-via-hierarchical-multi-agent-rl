@@ -8,12 +8,24 @@ try:
         CommunicationNetwork,
         AttentionNetwork,
     )
+    from .components import (
+        HierarchicalCoordinationLoss,
+        SpatialAttentionModule,
+        PositionalEncoding,
+        GatedFusion,
+        AdaptiveLearningRateScheduler,
+    )
 except ImportError:
     HierarchicalTrafficAgent = None
     IntersectionAgent = None
     DistrictAgent = None
     CommunicationNetwork = None
     AttentionNetwork = None
+    HierarchicalCoordinationLoss = None
+    SpatialAttentionModule = None
+    PositionalEncoding = None
+    GatedFusion = None
+    AdaptiveLearningRateScheduler = None
 
 __all__ = [
     "HierarchicalTrafficAgent",
@@ -21,4 +33,9 @@ __all__ = [
     "DistrictAgent",
     "CommunicationNetwork",
     "AttentionNetwork",
+    "HierarchicalCoordinationLoss",
+    "SpatialAttentionModule",
+    "PositionalEncoding",
+    "GatedFusion",
+    "AdaptiveLearningRateScheduler",
 ]

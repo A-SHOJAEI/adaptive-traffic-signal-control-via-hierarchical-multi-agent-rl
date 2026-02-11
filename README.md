@@ -45,6 +45,10 @@ Our hierarchical multi-agent reinforcement learning system employs:
 3. **Communication Networks**: Enable efficient inter-agent information sharing
 4. **3-Phase Hierarchical Training**: Progressive skill building from local to global optimization
 
+## Methodology
+
+This project implements a novel hierarchical multi-agent reinforcement learning approach for adaptive traffic signal control. The key innovation is a two-level agent architecture where intersection-level agents learn local signal timing while district-level agents coordinate multiple intersections through learned communication protocols. The system uses a custom hierarchical coordination loss function that balances individual agent performance with inter-agent coordination quality. Training proceeds in three phases: (1) intersection agents pre-train independently to learn effective local policies, (2) district agents learn to coordinate frozen intersection agents via communication networks, and (3) all agents fine-tune jointly for end-to-end optimization. This hierarchical decomposition enables scalable learning across large traffic networks while maintaining coordination quality.
+
 ## Training Results
 
 Training was performed on a **5x5 synthetic traffic grid** with **25 intersections**, using a **2-level PPO architecture with communication network**. The 3-phase hierarchical training pipeline completed in **4.8 minutes** total.
@@ -148,299 +152,35 @@ python scripts/evaluate.py \
   --visualize
 ```
 
-### Example Usage
-
-```python
-from adaptive_traffic_signal_control_via_hierarchical_multi_agent_rl import (
-    HierarchicalTrafficAgent,
-    HierarchicalTrainer,
-    TrafficMetrics
-)
-from adaptive_traffic_signal_control_via_hierarchical_multi_agent_rl.utils.config import load_config
-
-# Load configuration
-config = load_config("configs/default.yaml")
-
-# Create and train agent
-trainer = HierarchicalTrainer(config)
-results = trainer.train()
-
-# Evaluate performance
-metrics = TrafficMetrics(config)
-# ... evaluation code
-```
 
 ## Architecture
 
-### System Overview
+The system uses a two-level hierarchical architecture:
 
-```mermaid
-graph TD
-    A[Traffic Environment] --> B[Low-Level Agents]
-    A --> C[High-Level Agents]
-    B --> D[Intersection Control]
-    C --> E[District Coordination]
-    D --> F[Communication Network]
-    E --> F
-    F --> G[Hierarchical Policy]
-```
+- **Intersection Agents**: PPO-based controllers for individual traffic lights with discrete action space (4 phases)
+- **District Agents**: PPO-based coordinators managing 3x3 intersection groups with continuous action space
+- **Communication Network**: Attention-based inter-agent messaging for coordination
+- **Model Components**: MLP feature extraction, LSTM temporal processing, multi-head attention for spatial relationships
 
-### Component Details
+## Configuration
 
-#### 1. Hierarchical Agent Structure
-
-- **Intersection Agents**: Control individual traffic lights
-  - Algorithm: Proximal Policy Optimization (PPO)
-  - Action Space: Discrete (4 traffic light phases)
-  - Observation: Local traffic conditions, queue lengths, waiting times
-
-- **District Agents**: Coordinate multiple intersections
-  - Algorithm: PPO with communication network
-  - Action Space: Continuous coordination signals
-  - Observation: Aggregated district-wide traffic metrics
-
-#### 2. Communication Architecture
-
-```python
-class CommunicationNetwork:
-    """Inter-agent communication using attention mechanisms"""
-
-    def forward(self, agent_embeddings, adjacency_matrix):
-        # Message encoding and aggregation
-        messages = self.message_encoder(agent_embeddings)
-        aggregated_messages = self.aggregate_messages(messages, adjacency_matrix)
-        updated_embeddings = self.message_decoder(aggregated_messages)
-        return updated_embeddings
-```
-
-#### 3. Model Architecture
-
-- **Feature Extraction**: Multi-layer perceptrons with ReLU activations
-- **Temporal Processing**: LSTM layers for sequence modeling
-- **Attention Mechanism**: Multi-head attention for spatial relationships
-- **Communication**: Dedicated networks for inter-agent messaging
-
-## Usage
-
-### Configuration
-
-The system uses YAML configuration files. Key sections:
-
-```yaml
-# configs/default.yaml
-experiment:
-  name: "hierarchical_marl_traffic_control"
-  seed: 42
-  log_level: "INFO"
-
-environment:
-  scenario: "manhattan_grid"
-  grid_size: [5, 5]
-  simulation_time: 3600
-
-training:
-  total_timesteps: 1000000
-  batch_size: 2048
-  learning_rate: 3e-4
-
-agents:
-  hierarchy_levels: 2
-  low_level:
-    algorithm: "PPO"
-    action_space_size: 4
-  high_level:
-    algorithm: "PPO"
-    action_space_size: 16
-```
-
-### Scenario Options
-
-- `manhattan_grid`: Regular grid network (3x3 to 10x10)
-- Synthetic built-in grid for SUMO-free experimentation
-- Custom scenarios via SUMO configuration files
+The system uses YAML files in `configs/`. Key parameters: grid size, simulation time, PPO hyperparameters, hierarchical training settings. See `configs/default.yaml` for full configuration. Use `configs/ablation.yaml` for ablation studies.
 
 ## Training
 
-### 3-Phase Training Pipeline
-
-The hierarchical training proceeds in three phases:
-
-#### Phase 1: Intersection Agent Pre-training
-Each intersection agent learns local signal control independently.
-```python
-# Pre-train intersection agents independently
-if config.training.hierarchical.pretrain_low_level:
-    intersection_results = trainer._pretrain_intersection_agents()
-```
-
-#### Phase 2: District Agent Coordination
-District agents learn to coordinate groups of intersections via communication.
-```python
-# Train district agents with fixed intersection agents
-district_results = trainer._train_district_agents()
-```
-
-#### Phase 3: Joint Fine-tuning
-All agents are fine-tuned end-to-end for global optimization.
-```python
-# Fine-tune all agents together
-joint_results = trainer._joint_fine_tuning()
-```
-
-### Monitoring Training
-
-#### MLflow Integration
-
-```bash
-# Start MLflow UI
-mlflow ui --backend-store-uri file:./mlruns
-
-# View experiments at http://localhost:5000
-```
-
-#### Key Metrics
-
-- **Episode Reward**: Total reward per episode
-- **Waiting Time**: Average vehicle waiting time
-- **Throughput**: Vehicles processed per hour
-- **Coordination Efficiency**: Inter-agent coordination quality
-- **Training Loss**: Model training losses
+The 3-phase hierarchical pipeline: (1) pre-train intersection agents independently, (2) train district coordination with frozen intersection agents, (3) joint fine-tuning. Monitor training with MLflow (`mlflow ui`) tracking episode rewards, waiting times, throughput, and coordination efficiency.
 
 ## Evaluation
 
-### Performance Metrics
-
-1. **Cumulative Reward**: Overall agent performance vs fixed baseline
-2. **Waiting Time Reduction**: Decrease in average vehicle waiting time
-3. **Coordination Efficiency**: Inter-agent coordination quality
-4. **Per-Phase Convergence**: Reward progression within each training phase
-
-### Evaluation Process
-
-```python
-from adaptive_traffic_signal_control_via_hierarchical_multi_agent_rl.evaluation.metrics import TrafficMetrics
-
-# Initialize evaluator
-metrics = TrafficMetrics(config)
-
-# Evaluate trained model
-episode_metrics = metrics.evaluate_episode(env, agent)
-
-# Compare with baseline
-baseline_metrics = metrics.evaluate_baseline(env)
-
-# Calculate improvements
-improvements = metrics.calculate_improvement_metrics()
-```
+Key metrics: cumulative reward, waiting time reduction, coordination efficiency. Run `python scripts/evaluate.py --model-path <path> --episodes 20 --baseline` to evaluate trained models against fixed-time baselines.
 
 ## API Reference
 
-### Core Classes
-
-#### HierarchicalTrafficAgent
-```python
-class HierarchicalTrafficAgent(nn.Module):
-    """Main hierarchical agent combining intersection and district agents."""
-
-    def __init__(self, config: Config):
-        """Initialize hierarchical agent."""
-
-    def add_intersection_agent(self, agent_id: str) -> None:
-        """Add intersection agent to hierarchy."""
-
-    def add_district_agent(self, agent_id: str) -> None:
-        """Add district agent to hierarchy."""
-
-    def forward(self, observations, adjacency_matrices, agent_mappings):
-        """Forward pass through hierarchical architecture."""
-```
-
-#### TrafficEnvironment
-```python
-class TrafficEnvironment(MultiAgentEnv):
-    """SUMO-based multi-agent traffic environment."""
-
-    def reset(self) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
-        """Reset environment and return initial observations."""
-
-    def step(self, actions) -> Tuple[...]:
-        """Execute actions and return new state."""
-```
-
-#### TrafficMetrics
-```python
-class TrafficMetrics:
-    """Comprehensive traffic performance evaluation."""
-
-    def evaluate_episode(self, env, agent) -> Dict[str, float]:
-        """Evaluate single episode performance."""
-
-    def calculate_improvement_metrics(self) -> Dict[str, float]:
-        """Calculate improvements over baseline."""
-```
-
-### Configuration System
-
-```python
-from adaptive_traffic_signal_control_via_hierarchical_multi_agent_rl.utils.config import load_config
-
-# Load configuration
-config = load_config("configs/default.yaml")
-
-# Update configuration
-config.update({"training.learning_rate": 1e-4})
-
-# Save configuration
-config.save("configs/updated.yaml")
-```
-
-### Training Interface
-
-```python
-from adaptive_traffic_signal_control_via_hierarchical_multi_agent_rl.training.trainer import HierarchicalTrainer
-
-# Initialize trainer
-trainer = HierarchicalTrainer(config)
-
-# Run training
-results = trainer.train()
-```
+Core classes: `HierarchicalTrafficAgent`, `IntersectionAgent`, `DistrictAgent`, `CommunicationNetwork`, `HierarchicalTrainer`, `TrafficMetrics`. See source code in `src/` for detailed API documentation.
 
 ## Testing
 
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=src --cov-report=html
-
-# Run specific test modules
-pytest tests/test_model.py
-pytest tests/test_training.py
-pytest tests/test_evaluation.py
-```
-
-## References
-
-### Academic Papers
-
-1. Foerster, J. et al. "Counterfactual Multi-Agent Policy Gradients." AAAI 2018.
-2. Tampuu, A. et al. "Multiagent cooperation and competition with deep reinforcement learning." PLoS ONE 2017.
-3. Zhang, H. et al. "Cityflow: A multi-agent reinforcement learning environment for large scale city traffic scenario." WWW 2019.
-
-### Technical Documentation
-
-- [SUMO Documentation](https://sumo.dlr.de/docs/)
-- [Stable-Baselines3 Documentation](https://stable-baselines3.readthedocs.io/)
-
-### Related Projects
-
-- [FLOW](https://github.com/flow-project/flow): RL for traffic control
-- [CityFlow](https://github.com/cityflow-project/CityFlow): Traffic simulation
-- [SUMO-RL](https://github.com/LucasAlegre/sumo-rl): SUMO RL integration
+Run tests with `pytest` or `pytest --cov=src --cov-report=html` for coverage.
 
 ## License
 

@@ -152,3 +152,4 @@ data/*.hdf5
 data/raw/
 data/processed/
 .venv/
+*.pyc

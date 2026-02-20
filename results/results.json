@@ -1,0 +1,52 @@
+{
+  "project": "Adaptive Traffic Signal Control via Hierarchical Multi-Agent RL",
+  "environment": {
+    "type": "synthetic_grid",
+    "grid_size": [5, 5],
+    "num_intersections": 25,
+    "simulation_time_seconds": 3600
+  },
+  "model": {
+    "hierarchy_levels": 2,
+    "low_level_agents": "PPO-based intersection controllers",
+    "high_level_agents": "PPO-based district coordinators",
+    "communication_network": "multi-head attention"
+  },
+  "training": {
+    "total_training_time_minutes": 4.79,
+    "num_phases": 3,
+    "seed": 42
+  },
+  "phase_results": {
+    "phase1_pretrain": {
+      "description": "Intersection agent pre-training",
+      "total_experience": 50000,
+      "best_mean_reward": 449.44,
+      "training_time_seconds": 8.03
+    },
+    "phase2_district": {
+      "description": "District coordination training",
+      "total_steps": 30000,
+      "best_mean_reward": 75.57,
+      "training_time_seconds": 217.99
+    },
+    "phase3_joint": {
+      "description": "Joint fine-tuning (all levels)",
+      "total_steps": 20000,
+      "best_mean_reward": 35.95,
+      "training_time_seconds": 42.34
+    }
+  },
+  "final_evaluation": {
+    "num_episodes": 10,
+    "mean_reward": -339.76,
+    "mean_total_waiting_time": 306524.05,
+    "mean_total_throughput": 1865561.75
+  },
+  "baseline_comparison": {
+    "fixed_time_baseline_reward": -35010.71,
+    "trained_reward": -339.76,
+    "reward_improvement_pct": 99.03,
+    "waiting_time_reduction_pct": 90.92
+  }
+}
